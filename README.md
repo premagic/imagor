@@ -361,6 +361,28 @@ services:
       - "8000:8000"
 ```
 
+##### S3 HTTP Client Tuning
+
+For high-throughput workloads (>50 requests/second), you may want to tune the S3 HTTP client connection pool settings. The default Go HTTP client settings are conservative and may cause connection bottlenecks under load.
+
+```dotenv
+S3_HTTP_MAX_IDLE_CONNS=100
+S3_HTTP_MAX_IDLE_CONNS_PER_HOST=100
+S3_HTTP_MAX_CONNS_PER_HOST=0
+S3_HTTP_IDLE_CONN_TIMEOUT=90s
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `S3_HTTP_MAX_IDLE_CONNS` | 100 | Total idle connections across all S3 hosts |
+| `S3_HTTP_MAX_IDLE_CONNS_PER_HOST` | 100 | Idle connections per S3 endpoint. Key setting for performance |
+| `S3_HTTP_MAX_CONNS_PER_HOST` | 0 | Max active connections per host (0 = unlimited) |
+| `S3_HTTP_IDLE_CONN_TIMEOUT` | 90s | How long idle connections stay open |
+| `S3_HTTP_RESPONSE_HEADER_TIMEOUT` | 0 | Timeout waiting for response headers (0 = no timeout) |
+| `S3_HTTP_DISABLE_KEEP_ALIVES` | false | Disable HTTP keep-alives (not recommended) |
+
+These settings help reduce TCP/TLS handshake overhead by reusing connections. For multi-region setups with different S3 endpoints, increase `S3_HTTP_MAX_IDLE_CONNS` proportionally.
+
 #### Google Cloud Storage
 
 Docker Compose example with Google Cloud Storage:
@@ -909,6 +931,19 @@ Usage of imagor:
         AWS Session Token for S3 Result Storage to override global config
   -s3-result-storage-endpoint string
         Optional S3 Storage Endpoint to override default
+
+  -s3-http-max-idle-conns int
+        S3 HTTP client max idle connections across all hosts (default 100)
+  -s3-http-max-idle-conns-per-host int
+        S3 HTTP client max idle connections per host. Increase for high-throughput workloads (default 100)
+  -s3-http-max-conns-per-host int
+        S3 HTTP client max connections per host. 0 means unlimited (default 0)
+  -s3-http-idle-conn-timeout duration
+        S3 HTTP client idle connection timeout (default 90s)
+  -s3-http-response-header-timeout duration
+        S3 HTTP client response header timeout. 0 means no timeout (default 0)
+  -s3-http-disable-keep-alives
+        S3 HTTP client disable keep-alives. Not recommended for production
 
   -gcloud-safe-chars string
         Google Cloud safe characters to be excluded from image key escape. Set -- for no-op
